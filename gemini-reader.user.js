@@ -29,6 +29,10 @@
         theme: 'yellow',
         fontType: 'serif',
         fontSize: 19,
+        letterSpacing: 0,
+        lineHeight: 1.8,
+        customFontName: '',
+        customFontUrl: '',
         maxWidth: 900,
         hideFooter: true,
         publicStyle: false,
@@ -128,9 +132,17 @@
 
         /* === 7. 排版细节 === */
         body, p, li, h1, h2, h3, div, span, button, input { font-family: var(--w-font) !important; }
+
+        /* [优化] 增大标题字号 */
+        main h1, .model-response-text h1 { font-size: calc(${config.fontSize}px * 1.6) !important; line-height: 1.4 !important; margin-top: 1em !important; margin-bottom: 0.6em !important; letter-spacing: ${config.letterSpacing}px !important; }
+        main h2, .model-response-text h2 { font-size: calc(${config.fontSize}px * 1.45) !important; line-height: 1.4 !important; margin-top: 1em !important; margin-bottom: 0.6em !important; letter-spacing: ${config.letterSpacing}px !important; }
+        main h3, .model-response-text h3 { font-size: calc(${config.fontSize}px * 1.3) !important; line-height: 1.4 !important; margin-top: 1em !important; margin-bottom: 0.6em !important; letter-spacing: ${config.letterSpacing}px !important; }
+        main h4, .model-response-text h4 { font-size: calc(${config.fontSize}px * 1.15) !important; line-height: 1.4 !important; margin-top: 1em !important; margin-bottom: 0.6em !important; letter-spacing: ${config.letterSpacing}px !important; }
+
         main p, .model-response-text p {
             font-size: ${config.fontSize}px !important;
-            line-height: 1.8 !important;
+            letter-spacing: ${config.letterSpacing}px !important;
+            line-height: ${config.lineHeight} !important;
             text-align: justify !important;
             margin-bottom: 1.5em !important;
             color: var(--w-text) !important;
@@ -338,6 +350,27 @@
         fontRow.appendChild(createEl('span', null, 'A-')); fontRow.appendChild(slider); fontRow.appendChild(createEl('span', null, 'A+')); fontRow.appendChild(numInput);
         row2.appendChild(fontRow); panel.appendChild(row2);
 
+        // 字间距
+        const row5 = createEl('div'); row5.appendChild(createEl('div', 'wx-row-label', '字间距 (px)'));
+        const lsRow = createEl('div', 'wx-flex-row');
+        const lsSlider = createEl('input'); lsSlider.type = 'range'; lsSlider.min = -2; lsSlider.max = 10; lsSlider.step = 0.5; lsSlider.value = config.letterSpacing; lsSlider.id = 'wx-ls-slider';
+        const lsInput = createEl('input', 'wx-num-input'); lsInput.type = 'number'; lsInput.value = config.letterSpacing; lsInput.id = 'wx-ls-input'; lsInput.step = 0.5;
+        lsSlider.oninput = (e) => { config.letterSpacing = parseFloat(e.target.value); lsInput.value = config.letterSpacing; applyConfig(); };
+        lsInput.oninput = (e) => { let val = parseFloat(e.target.value); if(!isNaN(val)){ config.letterSpacing = val; lsSlider.value = val; applyConfig(); }};
+        lsRow.appendChild(createEl('span', null, '紧')); lsRow.appendChild(lsSlider); lsRow.appendChild(createEl('span', null, '松')); lsRow.appendChild(lsInput);
+        row5.appendChild(lsRow); panel.appendChild(row5);
+
+        // 行间距
+        const rowLineHeight = createEl('div'); rowLineHeight.appendChild(createEl('div', 'wx-row-label', '行间距'));
+        const lhRow = createEl('div', 'wx-flex-row');
+        const lhSlider = createEl('input'); lhSlider.type = 'range'; lhSlider.min = 1.0; lhSlider.max = 3.0; lhSlider.step = 0.1; lhSlider.value = config.lineHeight; lhSlider.id = 'wx-lh-slider';
+        const lhInput = createEl('input', 'wx-num-input'); lhInput.type = 'number'; lhInput.value = config.lineHeight; lhInput.id = 'wx-lh-input'; lhInput.step = 0.1;
+        lhSlider.oninput = (e) => { config.lineHeight = parseFloat(e.target.value); lhInput.value = config.lineHeight; applyConfig(); };
+        lhInput.oninput = (e) => { let val = parseFloat(e.target.value); if(!isNaN(val)){ config.lineHeight = val; lhSlider.value = val; applyConfig(); }};
+        lhRow.appendChild(createEl('span', null, '密')); lhRow.appendChild(lhSlider); lhRow.appendChild(createEl('span', null, '疏')); lhRow.appendChild(lhInput);
+        rowLineHeight.appendChild(lhRow); panel.appendChild(rowLineHeight);
+
+
         // 宽度
         const row4 = createEl('div'); row4.appendChild(createEl('div', 'wx-row-label', '阅读宽度 (px)'));
         const widthRow = createEl('div', 'wx-flex-row');
@@ -355,10 +388,34 @@
             { id: 'sans', name: '思源黑体' },
             { id: 'serif', name: '思源宋体' },
             { id: 'wenkai', name: '霞鹜文楷' },
-            { id: 'jost', name: 'Jost' }
+            { id: 'jost', name: 'Jost' },
+            { id: 'custom', name: '自定义' }
         ];
         fonts.forEach(f => { const btn = createEl('div', 'wx-font-btn', f.name); btn.dataset.val = f.id; btn.onclick = () => { config.fontType = f.id; applyConfig(); updateUIState(); }; fontContainer.appendChild(btn); });
-        row3.appendChild(fontContainer); panel.appendChild(row3);
+        row3.appendChild(fontContainer);
+
+        // 自定义字体输入区域
+        const customFontRow = createEl('div'); customFontRow.id = 'wx-custom-font-row';
+        customFontRow.style.cssText = "display:none; flex-direction:column; gap:10px; margin-top:10px; background:rgba(0,0,0,0.03); padding:10px; border-radius:10px;";
+
+        const cfNameInput = createEl('input'); cfNameInput.placeholder = "字体名称 (如: Microsoft YaHei)";
+        cfNameInput.style.cssText = "width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; box-sizing:border-box;";
+        cfNameInput.value = config.customFontName;
+        cfNameInput.id = 'wx-cf-name';
+        cfNameInput.onchange = (e) => { config.customFontName = e.target.value; applyConfig(); };
+
+        const cfUrlInput = createEl('input'); cfUrlInput.placeholder = "字体链接 (可选, CSS URL)";
+        cfUrlInput.style.cssText = "width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; box-sizing:border-box;";
+        cfUrlInput.value = config.customFontUrl;
+        cfUrlInput.id = 'wx-cf-url';
+        cfUrlInput.onchange = (e) => { config.customFontUrl = e.target.value; applyConfig(); };
+
+        customFontRow.appendChild(createEl('div', 'wx-row-label', '自定义字体设置'));
+        customFontRow.appendChild(cfNameInput);
+        customFontRow.appendChild(cfUrlInput);
+        row3.appendChild(customFontRow);
+
+        panel.appendChild(row3);
 
         // 底部开关
         const row6 = createEl('div', 'wx-switch-row'); row6.appendChild(createEl('span', null, '隐藏底部免责声明'));
@@ -678,7 +735,23 @@
         root.style.setProperty('--w-accent-text', t.accentText);
         root.style.setProperty('--w-input-bg', t.inputBg);
         root.style.setProperty('--w-sidebar-text', t.sidebarText);
-        root.style.setProperty('--w-font', fontStacks[config.fontType]);
+
+        if (config.fontType === 'custom') {
+            root.style.setProperty('--w-font', `"${config.customFontName}", sans-serif`);
+            if (config.customFontUrl) {
+                let link = document.getElementById('wx-custom-font');
+                if (!link) {
+                    link = document.createElement('link');
+                    link.id = 'wx-custom-font';
+                    link.rel = 'stylesheet';
+                    document.head.appendChild(link);
+                }
+                if (link.href !== config.customFontUrl) link.href = config.customFontUrl;
+            }
+        } else {
+            root.style.setProperty('--w-font', fontStacks[config.fontType]);
+        }
+
         root.style.setProperty('--w-footer-display', config.hideFooter ? 'none' : 'block');
         document.body.setAttribute('data-public-style', config.publicStyle);
         document.body.setAttribute('data-pub-color', config.publicColor);
@@ -688,7 +761,11 @@
         else document.body.setAttribute('data-theme', 'light');
 
         GM_addStyle(`
-            main p, .model-response-text p { font-size: ${config.fontSize}px !important; }
+            main p, .model-response-text p { font-size: ${config.fontSize}px !important; letter-spacing: ${config.letterSpacing}px !important; line-height: ${config.lineHeight} !important; }
+            main h1, .model-response-text h1 { font-size: calc(${config.fontSize}px * 1.6) !important; letter-spacing: ${config.letterSpacing}px !important; }
+            main h2, .model-response-text h2 { font-size: calc(${config.fontSize}px * 1.45) !important; letter-spacing: ${config.letterSpacing}px !important; }
+            main h3, .model-response-text h3 { font-size: calc(${config.fontSize}px * 1.3) !important; letter-spacing: ${config.letterSpacing}px !important; }
+            main h4, .model-response-text h4 { font-size: calc(${config.fontSize}px * 1.15) !important; letter-spacing: ${config.letterSpacing}px !important; }
         `);
         localStorage.setItem('gemini_reader_config', JSON.stringify(config));
     }
@@ -698,6 +775,10 @@
         panel.querySelectorAll('.wx-color-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.val === config.theme));
         panel.querySelectorAll('.wx-font-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.val === config.fontType));
         document.getElementById('wx-fs-slider').value = config.fontSize; document.getElementById('wx-fs-input').value = config.fontSize;
+        const lsSlider = document.getElementById('wx-ls-slider'); if(lsSlider) lsSlider.value = config.letterSpacing;
+        const lsInput = document.getElementById('wx-ls-input'); if(lsInput) lsInput.value = config.letterSpacing;
+        const lhSlider = document.getElementById('wx-lh-slider'); if(lhSlider) lhSlider.value = config.lineHeight;
+        const lhInput = document.getElementById('wx-lh-input'); if(lhInput) lhInput.value = config.lineHeight;
         document.getElementById('wx-wd-slider').value = config.maxWidth; document.getElementById('wx-wd-input').value = config.maxWidth;
         document.getElementById('wx-footer-check').checked = config.hideFooter;
         document.getElementById('wx-public-check').checked = config.publicStyle;
@@ -705,6 +786,11 @@
         if (config.publicStyle) styleRow.classList.add('visible'); else styleRow.classList.remove('visible');
         panel.querySelectorAll('.wx-style-dot').forEach(dot => dot.classList.toggle('active', dot.dataset.val === config.publicColor));
         panel.querySelectorAll('.wx-type-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.val === config.publicType));
+
+        const cfRow = document.getElementById('wx-custom-font-row');
+        if (cfRow) cfRow.style.display = config.fontType === 'custom' ? 'flex' : 'none';
+        const cfName = document.getElementById('wx-cf-name'); if(cfName) cfName.value = config.customFontName;
+        const cfUrl = document.getElementById('wx-cf-url'); if(cfUrl) cfUrl.value = config.customFontUrl;
     }
 
     function openPanel() { buildPanel(); document.getElementById('wx-overlay').classList.add('active'); document.getElementById('wx-panel').classList.add('active'); updateUIState(); }
